@@ -1,0 +1,242 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_health",
+        "description": "Check whether the local WorkBuddy/CodeBuddy agent service is reachable, whether the gateway password is accepted, and whether the agent is signed in to an account. Call this first when an agent run produces no output.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_info",
+        "description": "Return environment information about the agent host: product version, OS, architecture, current working directory and uptime.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_run",
+        "description": "Run a prompt on the local coding agent and return its answer. By default this waits for the run to finish (up to `timeoutSeconds`) and returns the final text. Set wait=false to get a job id back immediately and poll it with agent_job_status.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "prompt": {
+              "type": "string",
+              "description": "The instruction for the agent."
+            },
+            "cwd": {
+              "type": "string",
+              "description": "Working directory for the run. Defaults to the agent process CWD."
+            },
+            "agent": {
+              "type": "string",
+              "description": "Agent mode to use, e.g. \"cli\" (default), \"ptc\", \"minimal\", or a custom agent name."
+            },
+            "permissionMode": {
+              "type": "string",
+              "description": "Permission mode for the run, e.g. \"default\", \"plan\", \"acceptEdits\", \"delegate\"."
+            },
+            "model": {
+              "type": "string",
+              "description": "Optional model override."
+            },
+            "name": {
+              "type": "string",
+              "description": "Optional human-friendly job name."
+            },
+            "wait": {
+              "type": "boolean",
+              "description": "Wait for completion. Default true."
+            },
+            "timeoutSeconds": {
+              "type": "number",
+              "description": "Maximum seconds to wait when wait=true. Default 300, maximum 1800."
+            }
+          },
+          "required": [
+            "prompt"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_job_status",
+        "description": "Get the current status of an agent job by id, including its lifecycle state (working / blocked / done / failed / stopped) and the transcript collected so far.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "jobId": {
+              "type": "string",
+              "description": "Job id (stable id, short id, or session id)."
+            },
+            "includeTranscript": {
+              "type": "boolean",
+              "description": "Include the replayed transcript. Default true."
+            }
+          },
+          "required": [
+            "jobId"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_job_stop",
+        "description": "Stop a running agent job.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "jobId": {
+              "type": "string",
+              "description": "Job id to stop."
+            }
+          },
+          "required": [
+            "jobId"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_job_reply",
+        "description": "Send a follow-up message to an agent job that is waiting for input.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "jobId": {
+              "type": "string",
+              "description": "Job id to reply to."
+            },
+            "message": {
+              "type": "string",
+              "description": "The reply text."
+            }
+          },
+          "required": [
+            "jobId",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_jobs_list",
+        "description": "List background agent jobs known to the local service.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "cwd": {
+              "type": "string",
+              "description": "Filter by working directory."
+            },
+            "all": {
+              "type": "boolean",
+              "description": "Include jobs from every project."
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_sessions_list",
+        "description": "List recent agent conversation sessions.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "cwd": {
+              "type": "string",
+              "description": "Filter by working directory."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of sessions to return."
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_workers_list",
+        "description": "List running agent worker processes (interactive sessions, background jobs and daemons) together with the endpoint each one is serving.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_worker_logs",
+        "description": "Read logs for a worker process. type may be telemetry, process, debug or transcript; tail limits the number of lines returned.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "workerId": {
+              "type": "string",
+              "description": "Worker pid or name."
+            },
+            "type": {
+              "type": "string",
+              "description": "Log source: telemetry | process | debug | transcript."
+            },
+            "tail": {
+              "type": "number",
+              "description": "Return only the last N lines."
+            }
+          },
+          "required": [
+            "workerId"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "agent_dispatch_context",
+        "description": "Return the context used when dispatching new agent work: default working directory, available agent modes and the default permission mode.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      }
+    }
+  ],
+  "source": "mcp",
+  "mcpEndpoint": "http://127.0.0.1:8931/mcp"
+}

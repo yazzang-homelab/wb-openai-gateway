@@ -1,0 +1,31 @@
+{
+  "name": "wb-openai-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OAuth-protected OpenAI-compatible gateway (plus MCP) in front of the WorkBuddy / CodeBuddy agent, with a GJC integration guide",
+  "type": "module",
+  "bin": {
+    "wb-agent-gateway": "./bin/wb-agent-gateway.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "start": "node bin/wb-agent-gateway.js serve",
+    "doctor": "node bin/wb-agent-gateway.js doctor",
+    "test": "node test/tool-bridge.mjs && node test/e2e.mjs && node test/mcp-sdk-client.mjs && node test/openai-client.mjs",
+    "test:bridge": "node test/tool-bridge.mjs",
+    "test:e2e": "node test/e2e.mjs",
+    "test:mcp": "node test/mcp-sdk-client.mjs",
+    "test:openai": "node test/openai-client.mjs",
+    "mock-model": "node tools/mock-model.mjs",
+    "build:site": "node scripts/build-site.mjs",
+    "test:site": "node test/site.mjs",
+    "token": "node tools/get-token.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "marked": "^16.4.2",
+    "openai": "^7.19.0"
+  }
+}

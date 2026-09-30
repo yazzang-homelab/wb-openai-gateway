@@ -1,0 +1,39 @@
+# Merge into ~/.gjc/agent/models.yml. Do not overwrite unrelated providers.
+# The token is read from the environment; never write it into this file.
+providers:
+  wb-agent:
+    # The gateway's OpenAI base URL. Use the address GJC can actually reach
+    # (loopback, a private network such as Tailscale, or an HTTPS reverse proxy).
+    baseUrl: http://127.0.0.1:8931/v1
+    api: openai-completions
+    auth: apiKey
+    apiKeyEnv: WB_AGENT_TOKEN
+    compat:
+      # The gateway maps OpenAI `reasoning_effort` onto the agent's effort.
+      supportsReasoningEffort: true
+    models:
+      # `<pseudo-model>:<backend>`; the backend must be listed in the gateway's
+      # openai.backendModels, otherwise the id falls back to the default agent.
+      - id: workbuddy-minimal:gpt-5.5
+        name: WorkBuddy minimal · GPT-5.5
+        reasoning: true
+        thinking:
+          minLevel: minimal
+          maxLevel: xhigh
+          mode: effort
+        input: [text]
+        contextWindow: 200000
+        maxTokens: 32000
+        # Placeholder metadata, not a price quote.
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
+      - id: workbuddy:gpt-5.5
+        name: WorkBuddy cli · GPT-5.5
+        reasoning: true
+        thinking:
+          minLevel: minimal
+          maxLevel: xhigh
+          mode: effort
+        input: [text]
+        contextWindow: 200000
+        maxTokens: 32000
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }

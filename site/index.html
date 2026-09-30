@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko" data-lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="WorkBuddy / CodeBuddy 에이전트를 OpenAI 호환 API로 쓰는 게이트웨이 가이드와 GJC 연결 별첨 (한국어 · English)." />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="title-ko" content="wb-openai-gateway · 에이전트를 OpenAI API로" />
+    <meta name="title-en" content="wb-openai-gateway · The agent as an OpenAI API" />
+    <title>wb-openai-gateway · 에이전트를 OpenAI API로</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script src="assets/site.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="./"><span class="brand-icon" aria-hidden="true">&gt;_</span>WB-GATEWAY<small>/v1</small></a>
+        <nav class="nav" aria-label="Main">
+          <a href="#start"><span data-l="ko">시작하기</span><span data-l="en">Start</span></a>
+          <a href="#docs"><span data-l="ko">문서</span><span data-l="en">Docs</span></a>
+          <a href="ko/gjc.html" data-l="ko">GJC 별첨</a>
+          <a href="en/gjc.html" data-l="en">GJC appendix</a>
+        </nav>
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" data-set-lang="ko" lang="ko" aria-pressed="true">한국어</button>
+          <button type="button" data-set-lang="en" lang="en" aria-pressed="false">EN</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="container hero">
+        <div>
+          <span class="badge"><span class="dot" aria-hidden="true"></span><span data-l="ko">OPENAI 호환 게이트웨이</span><span data-l="en">OPENAI-COMPATIBLE GATEWAY</span></span>
+          <h1>
+            <span data-l="ko">내 코딩 에이전트를<br /><span class="gradient">OpenAI API처럼.</span></span>
+            <span data-l="en">Your coding agent,<br /><span class="gradient">served as an OpenAI API.</span></span>
+          </h1>
+          <p class="lead" data-l="ko">
+            WorkBuddy / CodeBuddy 에이전트 앞에 OAuth로 보호되는 <code>/v1</code>을 세웁니다.
+            OpenAI SDK, curl, GJC가 <code>base_url</code>과 토큰만으로 붙고, 함수 호출은 진짜 <code>tool_calls</code>로 돌아옵니다.
+          </p>
+          <p class="lead" data-l="en">
+            An OAuth-protected <code>/v1</code> in front of the WorkBuddy / CodeBuddy agent. OpenAI SDKs, curl and GJC
+            connect with a <code>base_url</code> and a token, and function calling comes back as real <code>tool_calls</code>.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="ko/guide.html" data-l="ko">가이드 읽기 ↗</a>
+            <a class="button primary" href="en/guide.html" data-l="en">Read the guide ↗</a>
+            <a class="button" href="ko/gjc.html" data-l="ko">GJC에 붙이기</a>
+            <a class="button" href="en/gjc.html" data-l="en">Attach to GJC</a>
+          </div>
+        </div>
+        <div class="terminal" aria-label="Example">
+          <div class="terminal-bar"><span><i></i><i></i><i></i></span><span>gjc → /v1 → agent</span></div>
+<pre><span class="t-c"># 1. token (one per device)</span>
+<span class="t-p">❯</span> node tools/get-token.mjs --name laptop &gt; ~/.config/wb-agent-token
+<span class="t-c"># 2. models.yml: provider wb-agent (openai-completions)</span>
+<span class="t-p">❯</span> export WB_AGENT_TOKEN="$(cat ~/.config/wb-agent-token)"
+<span class="t-p">❯</span> gjc -p --tools=read \
+    --model "wb-agent/workbuddy-minimal:gpt-5.5:high" \
+    "read ./note.txt, reply with the secret word"
+<span class="t-y">  toolCall read {"path":"./note.txt"}</span>
+<span class="t-ok">pineapple-42</span></pre>
+        </div>
+      </section>
+
+      <section class="container section" id="start">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">01 / QUICK START</p>
+            <h2 data-l="ko">세 단계로 첫 호출까지</h2>
+            <h2 data-l="en">Three steps to the first call</h2>
+          </div>
+        </div>
+        <div class="grid steps">
+          <div class="card"><div class="card-body">
+            <span class="step-num">STEP 01</span>
+            <h3 class="card-title" data-l="ko">에이전트와 게이트웨이 설치</h3>
+            <h3 class="card-title" data-l="en">Install agent and gateway</h3>
+            <p data-l="ko">전용 사용자에 <code>@tencent-ai/codebuddy-code</code>와 이 레포를 설치하고, 자격증명은 <code>.env</code>(600)에만 둡니다.</p>
+            <p data-l="en">Install <code>@tencent-ai/codebuddy-code</code> and this repo for a dedicated user; credentials live only in <code>.env</code> (600).</p>
+          </div></div>
+          <div class="card"><div class="card-body">
+            <span class="step-num">STEP 02</span>
+            <h3 class="card-title" data-l="ko">서비스로 실행</h3>
+            <h3 class="card-title" data-l="en">Run it as a service</h3>
+            <p data-l="ko"><code>toolsMode: translate</code>, <code>permissionMode: dontAsk</code>로 설정하고 systemd 유닛으로 띄웁니다. 업스트림은 게이트웨이가 감시합니다.</p>
+            <p data-l="en">Set <code>toolsMode: translate</code> and <code>permissionMode: dontAsk</code>, start the systemd unit; the gateway supervises the upstream.</p>
+          </div></div>
+          <div class="card"><div class="card-body">
+            <span class="step-num">STEP 03</span>
+            <h3 class="card-title" data-l="ko">토큰 발급 후 호출</h3>
+            <h3 class="card-title" data-l="en">Issue a token and call</h3>
+            <p data-l="ko"><code>tools/get-token.mjs</code>로 기기별 토큰을 받고 <code>/v1/chat/completions</code>를 호출합니다.</p>
+            <p data-l="en">Get a per-device token with <code>tools/get-token.mjs</code> and call <code>/v1/chat/completions</code>.</p>
+          </div></div>
+        </div>
+      </section>
+
+      <section class="container section" id="docs">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">02 / DOCUMENTS</p>
+            <h2 data-l="ko">읽고, 설정하고, 검증하세요</h2>
+            <h2 data-l="en">Read it, configure it, verify it</h2>
+          </div>
+        </div>
+        <div class="grid">
+          <a class="card" href="ko/guide.html" data-l="ko"><div class="card-body">
+            <span class="card-type">GUIDE</span>
+            <h3 class="card-title">게이트웨이 가이드 ↗</h3>
+            <p>인증 3계층, 설치, 설정, 토큰, 권한 모드와 409, 함수 호출, 테스트, 문제 해결.</p>
+          </div></a>
+          <a class="card" href="en/guide.html" data-l="en"><div class="card-body">
+            <span class="card-type">GUIDE</span>
+            <h3 class="card-title">Gateway guide ↗</h3>
+            <p>Auth layers, install, config, tokens, permission modes and 409, function calling, tests, troubleshooting.</p>
+          </div></a>
+          <a class="card" href="ko/gjc.html" data-l="ko"><div class="card-body">
+            <span class="card-type">APPENDIX</span>
+            <h3 class="card-title">GJC에 붙이기 ↗</h3>
+            <p><code>models.yml</code> 공급자, 모델 선택, 프로필, 격리 검증 절차, 제약과 문제 해결.</p>
+          </div></a>
+          <a class="card" href="en/gjc.html" data-l="en"><div class="card-body">
+            <span class="card-type">APPENDIX</span>
+            <h3 class="card-title">Attach to GJC ↗</h3>
+            <p>The <code>models.yml</code> provider, model choice, profiles, isolated verification, limits and fixes.</p>
+          </div></a>
+          <a class="card" href="examples/gjc-models.yml"><div class="card-body">
+            <span class="card-type">MODELS.YML</span>
+            <h3 class="card-title" data-l="ko">GJC 예시 설정 ↗</h3>
+            <h3 class="card-title" data-l="en">Example GJC config ↗</h3>
+            <p data-l="ko">토큰은 환경변수로 참조합니다. 기존 설정에 병합하세요.</p>
+            <p data-l="en">The token is referenced from the environment. Merge it into your config.</p>
+          </div></a>
+        </div>
+      </section>
+
+      <section class="container section">
+        <div class="notice">
+          <p data-l="ko"><strong>연결 전에.</strong> 게이트웨이는 서버에서 에이전트를 실행하는 엔드포인트입니다. 루프백·사설망·HTTPS 프록시 뒤에만 두고,
+            토큰·접속 암호·API 키·실제 주소는 Git에 넣지 마세요. <code>bypassPermissions</code>를 기본값으로 두면 접근 가능한 누구나 서버에서 명령을 실행할 수 있습니다.</p>
+          <p data-l="en"><strong>Before you connect.</strong> The gateway runs an agent on the host. Keep it on loopback, a private network or behind an HTTPS proxy,
+            and keep tokens, the access code, API keys and real addresses out of Git. Defaulting to <code>bypassPermissions</code> lets anyone who can reach it run commands on the host.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="container site-footer">
+      <span>wb-openai-gateway <span data-l="ko">· 비공식 가이드</span><span data-l="en">· unofficial guide</span></span>
+      <span><a href="https://github.com/yazzang-homelab/wb-openai-gateway">GitHub (private)</a></span>
+    </footer>
+  </body>
+</html>

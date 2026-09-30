@@ -1,0 +1,25 @@
+# Linux systemd unit (the built-in `install-service` command covers macOS launchd only).
+# Copy to /etc/systemd/system/, adjust User/paths, then:
+#   systemctl daemon-reload && systemctl enable --now wb-agent-gateway
+[Unit]
+Description=wb-agent-gateway (OAuth MCP/OpenAI gateway over CodeBuddy agent)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wbagent
+Group=wbagent
+# The agent's working directory: CodeBuddy's own file tools act here.
+WorkingDirectory=/home/wbagent/wb-agent-work
+Environment=HOME=/home/wbagent
+# Holds CODEBUDDY_API_KEY (or CODEBUDDY_AUTH_TOKEN). chmod 600, never commit it.
+EnvironmentFile=/home/wbagent/.local/wb-agent-gateway/.env
+ExecStart=/usr/bin/node /home/wbagent/.local/wb-agent-gateway/bin/wb-agent-gateway.js serve
+Restart=on-failure
+RestartSec=5
+MemoryMax=3G
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

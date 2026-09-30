@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Authorize agent access</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #16181d; --muted: #5c6470;
+    --line: #e3e6ea; --accent: #2f6feb; --danger: #b42318; --danger-bg: #fef3f2;
+    --warn-bg: #fffaeb; --warn-line: #f2d08a; --warn-ink: #7a4c00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 20px; background: var(--bg); color: var(--ink);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+  main {
+    max-width: 620px; margin: 0 auto; background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 32px; box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 8px 24px rgba(16,24,40,.06);
+  }
+  h1 { font-size: 21px; margin: 0 0 10px; letter-spacing: -.01em; }
+  .lede { color: var(--muted); margin: 0 0 18px; }
+  .warn {
+    background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);
+    border-radius: 10px; padding: 12px 14px; margin: 0 0 18px; font-size: 14px;
+  }
+  .error {
+    background: var(--danger-bg); border: 1px solid #f4c7c3; color: var(--danger);
+    border-radius: 10px; padding: 10px 14px; margin: 0 0 16px; font-size: 14px;
+  }
+  table.facts { width: 100%; border-collapse: collapse; margin: 0 0 22px; font-size: 14px; }
+  table.facts th {
+    text-align: left; width: 110px; color: var(--muted); font-weight: 500;
+    padding: 7px 10px 7px 0; vertical-align: top; border-bottom: 1px solid var(--line);
+  }
+  table.facts td { padding: 7px 0; border-bottom: 1px solid var(--line); word-break: break-all; }
+  code {
+    font: 12.5px/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    background: #f2f4f7; padding: 1px 5px; border-radius: 5px;
+  }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  input[type=password] {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px;
+    font-size: 15px; margin-bottom: 20px; background: #fff; color: var(--ink);
+  }
+  input[type=password]:focus { outline: 2px solid rgba(47,111,235,.35); border-color: var(--accent); }
+  .actions { display: flex; gap: 10px; }
+  button {
+    flex: 1; padding: 11px 18px; border-radius: 9px; font-size: 15px; font-weight: 550;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  button.primary { background: var(--accent); color: #fff; }
+  button.primary:hover { background: #245ccf; }
+  button.secondary { background: #fff; color: var(--ink); border-color: var(--line); }
+  button.secondary:hover { background: #f4f5f7; }
+  .foot { color: var(--muted); font-size: 12.5px; margin: 18px 0 0; }
+</style>
+</head>
+<body><main>
+      <h1>Authorize access to the local agent</h1>
+      <p class="lede">
+        <strong>Claude Desktop</strong> is requesting an OAuth token for the
+        WorkBuddy / CodeBuddy agent running on this machine.
+      </p>
+
+      <div class="warn">
+        <strong>This grants real power.</strong> A token issued here can run shell commands,
+        read and write files, and dispatch background agents as your user account.
+        Only approve clients you recognise.
+      </div>
+
+      
+
+      <table class="facts">
+        <tr><th>Client</th><td>Claude Desktop<br /><code>wb_Ghc2FLQVhxo55M14OL0a2uG9</code></td></tr>
+        <tr><th>Redirect</th><td><code>http://127.0.0.1:7777/callback</code></td></tr>
+        <tr><th>Scopes</th><td>agent:read agent:run</td></tr>
+        <tr><th>Resource</th><td><code>http://127.0.0.1:8931/mcp</code></td></tr>
+        <tr><th>Agent</th><td><code>http://127.0.0.1:8399</code></td></tr>
+      </table>
+
+      <form method="post" action="/authorize">
+        <input type="hidden" name="client_id" value="wb_Ghc2FLQVhxo55M14OL0a2uG9" />
+        <input type="hidden" name="redirect_uri" value="http://127.0.0.1:7777/callback" />
+        <input type="hidden" name="scope" value="agent:read agent:run" />
+        <input type="hidden" name="state" value="demo" />
+        <input type="hidden" name="code_challenge" value="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM" />
+        <input type="hidden" name="code_challenge_method" value="S256" />
+        <input type="hidden" name="resource" value="http://127.0.0.1:8931/mcp" />
+        <label for="access_code">Approval passphrase</label>
+               <input id="access_code" name="access_code" type="password" autocomplete="off"
+                      autofocus placeholder="Set in the gateway config" />
+        <div class="actions">
+          <button type="submit" name="decision" value="allow" class="primary">Approve</button>
+          <button type="submit" name="decision" value="deny" class="secondary">Deny</button>
+        </div>
+      </form>
+      <p class="foot">Passphrase is configured as <code>accessCode</code> in the gateway config.</p>
+      </main></body>
+</html>

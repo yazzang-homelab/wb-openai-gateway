@@ -1,0 +1,27 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Syntax
+        run: for f in bin/*.js src/*.js tools/*.mjs scripts/*.mjs test/*.mjs; do node --check "$f"; done
+      - name: Tool bridge (stub upstream)
+        run: npm run test:bridge
+      - name: Guide site
+        run: npm run test:site

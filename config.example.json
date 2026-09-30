@@ -1,0 +1,54 @@
+{
+  "//": "Copy to ~/.wb-agent-gateway/config.json and edit. CLI flags and environment variables override these values.",
+
+  "host": "127.0.0.1",
+  "port": 8931,
+
+  "//publicUrl": "The URL advertised in OAuth metadata. Set this when you put the gateway behind a tunnel or reverse proxy.",
+  "publicUrl": null,
+
+  "//accessCode": "Human approval passphrase shown on the consent screen. Generate one with: openssl rand -base64 24",
+  "accessCode": "CHANGE-ME",
+
+  "accessTokenTtl": 3600,
+  "refreshTokenTtl": 2592000,
+  "scopes": ["agent:read", "agent:run"],
+
+  "//dataDir": "Where the signing key, registered clients and tokens live.",
+  "dataDir": null,
+
+  "upstream": {
+    "//baseUrl": "The local WorkBuddy/CodeBuddy agent service. null = auto-discover via `codebuddy daemon status`.",
+    "baseUrl": null,
+    "//password": "Gateway password from ~/.codebuddy/settings.json. null = read it automatically.",
+    "password": null,
+    "discover": true,
+    "cliPath": null,
+
+    "//autoStart": "Spawn and supervise `codebuddy --serve` when nothing is listening.",
+    "autoStart": false,
+    "servePort": 8399,
+    "serveArgs": [],
+    "//env": "Extra environment for the spawned upstream. This is how the agent gets its model credential. CODEBUDDY_AUTH_TOKEN (OAuth) beats apiKeyHelper beats CODEBUDDY_API_KEY. CODEBUDDY_API_KEY also needs CODEBUDDY_INTERNET_ENVIRONMENT: omit for International, or internal / ioa / cloudhosted / selfhosted.",
+    "env": {
+      "//CODEBUDDY_API_KEY": "your-api-key",
+      "//CODEBUDDY_INTERNET_ENVIRONMENT": "internal"
+    },
+    "startTimeoutMs": 90000,
+    "maxRestarts": 5,
+
+    "headers": {},
+    "requestTimeoutMs": 120000
+  },
+
+  "exposeAcp": true,
+
+  "openai": {
+    "//toolsMode": "How to handle OpenAI tools. The agent runs its own tool loop and cannot natively return tool_calls, so: \"ignore\" drops tools and answers in text (flagging X-WorkBuddy-Tools-Ignored); \"reject\" returns 400 tools_not_supported so a framework that requires tool_calls fails fast; \"translate\" bridges the formats - declared schemas go into the prompt as a tool protocol and a structured reply comes back as real tool_calls. Use the /mcp endpoint when the caller must drive the agent's own tools.",
+    "toolsMode": "ignore",
+    "//permissionMode": "Permission mode for OpenAI jobs that omit workbuddy.permissionMode. An OpenAI request cannot answer a permission prompt, so a prompting mode ends in 409 agent_needs_input. \"dontAsk\" runs pre-approved and safe actions and denies the rest. One of default, acceptEdits, plan, auto, dontAsk, bypassPermissions.",
+    "permissionMode": "dontAsk"
+  },
+
+  "logLevel": "info"
+}
