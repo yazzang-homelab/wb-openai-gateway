@@ -116,6 +116,7 @@ chmod 600 ~/.config/wb-agent-token
 
 - 승인 암호는 `WB_AGENT_GATEWAY_ACCESS_CODE` 환경변수 또는 설정 파일의 `accessCode`에서 읽습니다.
 - 기기(클라이언트)마다 따로 발급하세요. `clients`로 목록을 보고 `rm-client <id>`로 등록을 지웁니다.
+  **`rm-client`는 서비스를 멈춘 상태에서 실행하세요.** 실행 중인 게이트웨이는 메모리 상태를 `state.json`에 다시 써서 삭제를 되돌립니다.
   이미 발급된 토큰은 만료되거나 `/revoke`될 때까지 유효하니 `accessTokenTtl`을 너무 길게 잡지 마세요.
 
 ## 4. 호출해 보기

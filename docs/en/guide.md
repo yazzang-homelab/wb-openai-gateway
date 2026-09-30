@@ -118,6 +118,7 @@ chmod 600 ~/.config/wb-agent-token
 
 - The approval passphrase is read from `WB_AGENT_GATEWAY_ACCESS_CODE` or the config's `accessCode`.
 - Issue one token per device. `clients` lists registrations and `rm-client <id>` removes one.
+  **Run `rm-client` with the service stopped:** a running gateway rewrites `state.json` from memory and undoes the removal.
   Issued tokens stay valid until they expire or are revoked via `/revoke`, so keep `accessTokenTtl` modest.
 
 ## 4. First calls
