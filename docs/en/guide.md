@@ -12,6 +12,24 @@ OpenAI client ──Bearer──▶ wb-agent-gateway (/v1) ──password──�
 
 The gateway also ships an MCP endpoint (`/mcp`); this guide covers the OpenAI API path only.
 
+## Why use it
+
+A WorkBuddy / CodeBuddy account gives you models (GPT-5.5 and others) and a coding agent, but only inside the
+WorkBuddy app or the `codebuddy` CLI. The HTTP API of `codebuddy --serve` is guarded by a shared password and a
+browser cookie and does not speak OpenAI, so no other tool can connect to it.
+
+This gateway fills that gap.
+
+- **Use the account you already have, from other tools.** Clients that only take a `base_url` + `api_key` — OpenAI SDKs, `curl`, GJC — connect unchanged.
+- **One token per client.** Instead of handing out the shared password, each device gets a scoped, individually revocable OAuth token.
+- **Client-side tool loops.** In `translate` mode the agent's decisions come back as real `tool_calls`, so a client like GJC runs tools on its own machine.
+- **Defaults that do not stall.** An OpenAI request cannot answer a permission prompt, so the default permission mode is `dontAsk`.
+- **Always on.** It spawns, supervises and restarts `codebuddy --serve` itself.
+
+**When it is the wrong tool.** If you already have a provider API key, call the provider directly. Every turn creates
+and stops one agent job, so it is slower; in `translate` mode the stream arrives only once the answer is complete;
+and token usage is an estimate.
+
 ## 1. Three authentication layers
 
 | Layer | Protects | Where it lives |

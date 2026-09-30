@@ -17,6 +17,7 @@
       <div class="container header-inner">
         <a class="brand" href="./"><span class="brand-icon" aria-hidden="true">&gt;_</span>WB-GATEWAY<small>/v1</small></a>
         <nav class="nav" aria-label="Main">
+          <a href="#why"><span data-l="ko">목적</span><span data-l="en">Why</span></a>
           <a href="#start"><span data-l="ko">시작하기</span><span data-l="en">Start</span></a>
           <a href="#docs"><span data-l="ko">문서</span><span data-l="en">Docs</span></a>
           <a href="ko/gjc.html" data-l="ko">GJC 별첨</a>
@@ -63,6 +64,41 @@
     "read ./note.txt, reply with the secret word"
 <span class="t-y">  toolCall read {"path":"./note.txt"}</span>
 <span class="t-ok">pineapple-42</span></pre>
+        </div>
+      </section>
+
+      <section class="container section" id="why">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">00 / WHY</p>
+            <h2 data-l="ko">왜 이 게이트웨이인가요</h2>
+            <h2 data-l="en">Why this gateway</h2>
+          </div>
+          <p class="muted" data-l="ko" style="max-width:34rem;margin:0">WorkBuddy / CodeBuddy 계정의 모델과 에이전트는 앱과 CLI 안에서만 쓰입니다. <code>codebuddy --serve</code>는 공유 비밀번호와 쿠키로만 열리고 OpenAI 형식도 아니라 다른 도구가 붙을 수 없습니다.</p>
+          <p class="muted" data-l="en" style="max-width:34rem;margin:0">A WorkBuddy / CodeBuddy account's models and agent live inside the app and CLI. <code>codebuddy --serve</code> opens only with a shared password and cookie and does not speak OpenAI, so other tools cannot connect.</p>
+        </div>
+        <div class="grid">
+          <div class="card"><div class="card-body">
+            <span class="card-type">REUSE</span>
+            <h3 class="card-title" data-l="ko">가진 계정을 다른 도구에서</h3>
+            <h3 class="card-title" data-l="en">Your account, in other tools</h3>
+            <p data-l="ko">OpenAI SDK, curl, GJC가 <code>base_url</code>과 토큰만으로 코드 수정 없이 붙습니다.</p>
+            <p data-l="en">OpenAI SDKs, curl and GJC connect with a <code>base_url</code> and a token, unchanged.</p>
+          </div></div>
+          <div class="card"><div class="card-body">
+            <span class="card-type">TOKENS</span>
+            <h3 class="card-title" data-l="ko">기기마다 폐기 가능한 토큰</h3>
+            <h3 class="card-title" data-l="en">Revocable per-device tokens</h3>
+            <p data-l="ko">공유 비밀번호 대신 범위가 정해진 OAuth 토큰을 기기별로 발급합니다.</p>
+            <p data-l="en">Scoped OAuth tokens per device instead of a shared password.</p>
+          </div></div>
+          <div class="card"><div class="card-body">
+            <span class="card-type">TOOL_CALLS</span>
+            <h3 class="card-title" data-l="ko">도구는 내 컴퓨터에서</h3>
+            <h3 class="card-title" data-l="en">Tools run on your machine</h3>
+            <p data-l="ko">에이전트의 판단을 진짜 <code>tool_calls</code>로 돌려줘 GJC가 로컬에서 실행합니다. 공급자 API 키가 있다면 직접 연결이 더 빠릅니다.</p>
+            <p data-l="en">Agent decisions come back as real <code>tool_calls</code> for GJC to run locally. With a provider API key, a direct connection is faster.</p>
+          </div></div>
         </div>
       </section>
 
