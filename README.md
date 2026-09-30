@@ -18,6 +18,8 @@ This gateway fills that gap.
 and stops one agent job, so it is slower; in `translate` mode the stream arrives only once the answer is complete;
 and token usage is an estimate.
 
+> Derived, with the author's permission, from [dbc-hbin/wb-agent-gateway](https://github.com/dbc-hbin/wb-agent-gateway) — see [NOTICE.md](NOTICE.md).
+>
 > **This repository** packages the gateway for its OpenAI-compatible API (`/v1`) use.
 > Guides: [English](docs/en/guide.md) · [한국어](docs/ko/guide.md) ·
 > Appendix: [attach to GJC](docs/en/gjc.md) / [GJC 연결](docs/ko/gjc.md) ·

@@ -34,4 +34,6 @@ npm run test:bridge   # 스텁 업스트림, 오프라인
 npm run test:site     # 가이드 사이트 빌드 + 링크 검사
 ```
 
+원본: 원작자 허락을 받아 [dbc-hbin/wb-agent-gateway](https://github.com/dbc-hbin/wb-agent-gateway)를 수정했습니다. [NOTICE.md](NOTICE.md) 참고.
+
 게이트웨이 코드에는 MCP 엔드포인트(`/mcp`)도 그대로 들어 있지만, 이 저장소의 문서는 OpenAI API 경로만 다룹니다.

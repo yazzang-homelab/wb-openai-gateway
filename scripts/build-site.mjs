@@ -118,7 +118,7 @@ ${body}
     </main>
     <footer class="container site-footer">
       <span>wb-openai-gateway · ${L.footer}</span>
-      <span><a href="../?lang=${lang}">${L.home}</a><a href="https://github.com/yazzang-homelab/wb-openai-gateway">GitHub (private)</a></span>
+      <span><a href="../?lang=${lang}">${L.home}</a><a href="https://github.com/yazzang-homelab/wb-openai-gateway">GitHub</a><a href="https://github.com/dbc-hbin/wb-agent-gateway">upstream: dbc-hbin</a></span>
     </footer>
   </body>
 </html>
