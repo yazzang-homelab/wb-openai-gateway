@@ -14,6 +14,8 @@
  *   --name <client>  client_name shown by `clients`    headless-client
  *   --scope <list>   requested scopes                  "agent:read agent:run"
  *   --config <file>  config.json holding accessCode    ~/.wb-agent-gateway/config.json
+ *   --allow-insecure-http   permit plain HTTP to a non-loopback host (e.g. over
+ *                           a WireGuard/Tailscale link you already trust)
  *
  * The access code comes from WB_AGENT_GATEWAY_ACCESS_CODE, else from the
  * config file. It is sent only to the gateway's own /authorize endpoint.
@@ -33,6 +35,15 @@ const clientName = flag('name', 'headless-client');
 const scope = flag('scope', 'agent:read agent:run');
 const configFile = flag('config', path.join(os.homedir(), '.wb-agent-gateway', 'config.json'));
 const redirect = 'http://127.0.0.1:9/callback';
+
+const target = new URL(base);
+const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname);
+if (target.protocol !== 'https:' && !loopback && !process.argv.includes('--allow-insecure-http')) {
+  throw new Error(
+    `Refusing to send the access code over plain HTTP to ${target.host}. Use https://, a loopback URL, ` +
+      'or pass --allow-insecure-http if the link is already encrypted (VPN).'
+  );
+}
 
 function accessCode() {
   if (process.env.WB_AGENT_GATEWAY_ACCESS_CODE) return process.env.WB_AGENT_GATEWAY_ACCESS_CODE;
@@ -66,6 +77,7 @@ const reg = await json(
 );
 if (!reg.client_id) throw new Error(`register failed: ${JSON.stringify(reg)}`);
 
+const state = crypto.randomBytes(16).toString('hex');
 const verifier = crypto.randomBytes(32).toString('base64url');
 const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
 const auth = await fetch(`${base}/authorize`, {
@@ -76,7 +88,7 @@ const auth = await fetch(`${base}/authorize`, {
     client_id: reg.client_id,
     redirect_uri: redirect,
     scope,
-    state: crypto.randomBytes(8).toString('hex'),
+    state,
     code_challenge: challenge,
     code_challenge_method: 'S256',
     decision: 'allow',
@@ -84,13 +96,19 @@ const auth = await fetch(`${base}/authorize`, {
   })
 });
 const location = auth.headers.get('location');
-if (!location) throw new Error(`authorize failed: HTTP ${auth.status} ${(await auth.text()).slice(0, 300)}`);
-const authCode = new URL(location).searchParams.get('code');
-if (!authCode) throw new Error(`authorize was denied: ${location}`);
+if (auth.status < 300 || auth.status > 399 || !location) {
+  throw new Error(`authorize failed: HTTP ${auth.status} ${(await auth.text()).slice(0, 300)}`);
+}
+const callback = new URL(location);
+if (`${callback.origin}${callback.pathname}` !== redirect) throw new Error(`authorize redirected elsewhere: ${callback.origin}`);
+if (callback.searchParams.get('state') !== state) throw new Error('authorize returned a mismatched state.');
+const authCode = callback.searchParams.get('code');
+if (!authCode) throw new Error(`authorize was denied: ${callback.searchParams.get('error') || 'no code'}`);
 
 const tok = await json(
   await fetch(`${base}/token`, {
     method: 'POST',
+    redirect: 'error',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'authorization_code',

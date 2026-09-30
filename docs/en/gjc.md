@@ -15,7 +15,9 @@ wb-agent-gateway  toolsMode=translate  ──▶  CodeBuddy agent (decides the n
 GJC runs read/edit/bash locally and sends the result back as role:"tool"
 ```
 
-The agent only decides *what* to do; GJC executes the tools on your machine.
+When the agent decides *what* to do, GJC executes that tool on your machine. But `translate` only converts
+formats; it does not switch off the agent's own tools. To limit what the agent does on the host, use
+`workbuddy-minimal` (section 4); how strictly `minimal` isolates is up to CodeBuddy's implementation.
 
 ## 1. Gateway prerequisites
 
@@ -31,8 +33,9 @@ The agent only decides *what* to do; GJC executes the tools on your machine.
 
 - `toolsMode: "translate"` — otherwise GJC's tool list is dropped (`ignore`) and the agent answers in text only.
 - `permissionMode: "dontAsk"` — GJC cannot send the `workbuddy` extension, so the gateway default applies.
-  A prompting mode ends the turn with `409 agent_needs_input`.
+  A prompting mode ends the turn with an `agent_needs_input` error (GJC streams, so it arrives as an error chunk inside HTTP 200).
 - `backendModels` — the backend of every `workbuddy…:<backend>` id you use in GJC must be listed.
+  **If it is missing, the request runs on the default `cli` agent (full tools) without an error,** even when you chose `minimal`.
 
 ## 2. Token
 
@@ -43,7 +46,8 @@ the environment; never write it into `models.yml`.
 export WB_AGENT_TOKEN="$(cat ~/.config/wb-agent-token)"
 ```
 
-For daily use, inject it from an OS secret manager rather than a shell profile.
+For daily use, inject it from an OS secret manager rather than a shell profile. Tokens expire after
+`accessTokenTtl` (`401`); during a long session, issue a new one, export it and restart GJC.
 
 ## 3. Add the provider to `models.yml`
 
@@ -75,6 +79,8 @@ providers:
   as `reasoning_effort`; the gateway forwards it as the agent's effort.
 - `input: [text]` — the gateway replaces image parts with `[image omitted]`.
 - Zero `cost` values are placeholders, not a price. Billing follows your CodeBuddy account.
+- `contextWindow` and `maxTokens` are client-side metadata for GJC. The gateway neither checks nor enforces them
+  (`max_tokens` is ignored); real limits come from the account's backend model.
 - GJC also lists other ids it finds at `/v1/models`, but with small default limits (for example max output).
   Declare the models you actually use, as above.
 
@@ -153,7 +159,7 @@ All three steps passed with GJC 0.18.1 while writing this repo (text ≈15 s, on
 | `Model "wb-agent/…" not found` | `models.yml` location (or `GJC_CODING_AGENT_DIR`), provider name, `id` spelling |
 | `custom models need a credential source` | `apiKeyEnv` is missing |
 | `401` | `WB_AGENT_TOKEN` empty, expired or revoked; make sure it is exported in the shell that runs GJC |
-| `409 agent_needs_input` | The gateway's `openai.permissionMode` prompts; set `dontAsk` |
+| `agent_needs_input` error | The gateway's `openai.permissionMode` prompts; set `dontAsk` |
 | Answers in prose instead of using tools | Gateway `toolsMode` is not `translate` (response header `X-WorkBuddy-Tools-Ignored: 1`) |
 | `:high` has no effect | `compat.supportsReasoningEffort: true` or `thinking` is missing |
 | Odd answers that look like server-side files | Use `workbuddy-minimal` instead of `workbuddy` (cli) |

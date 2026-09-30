@@ -26,6 +26,11 @@ This gateway fills that gap.
 - **Defaults that do not stall.** An OpenAI request cannot answer a permission prompt, so the default permission mode is `dontAsk`.
 - **Always on.** It spawns, supervises and restarts `codebuddy --serve` itself.
 
+**This is an unofficial integration.** WorkBuddy/CodeBuddy does not promise to allow or support it. Check that your
+account terms permit automation, giving other tools or people access, resale and anything that works around usage limits.
+Account restrictions, extra charges and feature changes are your risk. Not only prompts but also source and data in tool
+results travel gateway → agent → model provider.
+
 **When it is the wrong tool.** If you already have a provider API key, call the provider directly. Every turn creates
 and stops one agent job, so it is slower; in `translate` mode the stream arrives only once the answer is complete;
 and token usage is an estimate.
@@ -44,7 +49,8 @@ account edition (unset for International, `internal` for China).
 
 ## 2. Install (Linux)
 
-Node.js 18.17+ is required. The gateway itself has no runtime dependencies.
+Running the gateway needs Node.js 18.17+ and no runtime dependencies.
+Building the guide site (`npm run test:site`, uses `marked`) needs Node.js 20+.
 
 Run it as a dedicated user: the agent's file and shell tools execute with that user's rights.
 
@@ -59,7 +65,7 @@ runuser -u wbagent -- bash -lc '
 
 ### Credentials file
 
-`/home/wbagent/.local/wb-agent-gateway/.env` (mode `600`, never commit it):
+`/home/wbagent/.local/wb-agent-gateway/.env` (mode `600`, never commit it; the repo `.gitignore` excludes `.env`, but that does not remove a secret already committed):
 
 ```ini
 CODEBUDDY_API_KEY=your-key
@@ -79,7 +85,7 @@ screen is disabled and no new client can be approved.
   "host": "127.0.0.1",
   "port": 8931,
   "publicUrl": "http://127.0.0.1:8931",
-  "accessTokenTtl": 2592000,
+  "accessTokenTtl": 86400,
   "upstream": {
     "autoStart": true,
     "discover": false,
@@ -98,6 +104,8 @@ screen is disabled and no new client can be approved.
   itself, and the credentials in `.env` reach the child process.
 - `openai.backendModels` — each backend listed here appears in `/v1/models` as `workbuddy:<backend>`
   and so on. List only models your account can use.
+- `accessTokenTtl` — access token lifetime in seconds. The default is 3600 (1 h); the example uses 86400 (1 day).
+  A leaked token works until it expires, so keep it short and reissue with section 3.
 - `openai.toolsMode` and `openai.permissionMode` are explained in sections 5 and 6.
 
 ### Service
@@ -118,8 +126,11 @@ A healthy start logs `OpenAI base URL`, `OpenAI permissions  dontAsk` and `upstr
 ### Network exposure
 
 Binding `host` beyond loopback **exposes a command-execution endpoint** to that network (the start
-log warns about it). Keep it on a private network such as Tailscale or behind an HTTPS reverse proxy;
-never open it to the public internet. `publicUrl` must match the URL clients actually use, otherwise
+log warns about it). Keep it on a private network such as Tailscale and never open it to the public internet. HTTPS is
+encryption, not access control: if it must be reachable from outside, add a VPN, a firewall allow-list or an
+authenticating proxy on top of TLS. Client registration (`/register`) is unauthenticated, and the passphrase attempt
+limit is per client, so it is not a global brute-force defence. The unauthenticated `/health` returns the CodeBuddy
+account name, sign-in state and the number of registered clients; factor that into what you expose. `publicUrl` must match the URL clients actually use, otherwise
 requests fail with `421 invalid_host`.
 
 ## 3. Issue a token
@@ -128,16 +139,19 @@ For headless clients, `tools/get-token.mjs` runs dynamic registration → PKCE a
 in one go. The token goes to stdout only, so capture it straight into a file.
 
 ```bash
-runuser -u wbagent -- env HOME=/home/wbagent \
-  node /home/wbagent/.local/wb-agent-gateway/tools/get-token.mjs \
-  --url http://127.0.0.1:8931 --name my-laptop > ~/.config/wb-agent-token
-chmod 600 ~/.config/wb-agent-token
+umask 077; mkdir -p ~/.config
+runuser -u wbagent -- bash -c 'set -a; . ~/.local/wb-agent-gateway/.env; set +a
+  node ~/.local/wb-agent-gateway/tools/get-token.mjs --url http://127.0.0.1:8931 --name my-laptop' \
+  > ~/.config/wb-agent-token.new && mv ~/.config/wb-agent-token.new ~/.config/wb-agent-token
 ```
 
-- The approval passphrase is read from `WB_AGENT_GATEWAY_ACCESS_CODE` or the config's `accessCode`.
+- The approval passphrase is read from `WB_AGENT_GATEWAY_ACCESS_CODE` or the config's `accessCode`. The tool does not read `.env` itself, hence the `set -a` above.
+- `umask 077` first, so the token file is private from the moment it is created; a failed issue leaves the old file untouched.
+- The tool refuses to send the passphrase to a non-loopback `http://` URL. On an already encrypted VPN link (e.g. Tailscale) pass `--allow-insecure-http`.
 - Issue one token per device. `clients` lists registrations and `rm-client <id>` removes one.
   **Run `rm-client` with the service stopped:** a running gateway rewrites `state.json` from memory and undoes the removal.
-  Issued tokens stay valid until they expire or are revoked via `/revoke`, so keep `accessTokenTtl` modest.
+  Removing a registration does not invalidate tokens already issued. For a lost device, revoke the token itself:
+  `curl -X POST http://127.0.0.1:8931/revoke -d "token=$(cat ~/.config/wb-agent-token)"`
 
 ## 4. First calls
 
@@ -164,14 +178,15 @@ client.chat.completions.create(model="workbuddy:gpt-5.5",
 | `workbuddy-ptc` | `ptc` | Composes multi-step work into one script |
 | `workbuddy-minimal` | `minimal` | Sandbox REPL only, no file or MCP tools |
 
-Append `:<backend>` to run on that backend model (it must be in `backendModels`). Unknown ids fall
-back to the default agent and are echoed back unchanged.
+Append `:<backend>` to run on that backend model (it must be in `backendModels`). **Unknown ids run,
+without an error, on the default `cli` agent (full tools)** and are echoed back unchanged. That includes
+`workbuddy-minimal:…` with a backend missing from `backendModels`, so register every backend you use.
 
 ### Standard fields
 
 - `stream: true` is supported; long runs get an SSE keepalive every 15 seconds.
 - `reasoning_effort` is forwarded as the agent's effort (`minimal` … `max`).
-- `temperature`, `top_p`, `max_tokens`, `stop` are shape-checked and ignored. Image parts become `[image omitted]`.
+- `temperature`, `top_p`, `max_tokens`, `stop` are ignored without validation. Image parts become `[image omitted]`.
 - `usage` is a character-based estimate.
 
 ### The `workbuddy` extension
@@ -188,7 +203,8 @@ answer with `finish_reason: "length"`.
 
 When the agent waits for a permission decision before using one of its own tools (`blocked`), an
 OpenAI request has no way to answer it. The gateway stops the job and, if nothing was answered yet,
-returns `409 agent_needs_input`.
+returns `409 agent_needs_input`. A streaming request has already received HTTP 200, so the same error arrives
+as a chunk carrying an `error` field.
 
 So a request without `workbuddy.permissionMode` runs with the gateway's `openai.permissionMode`
 (default `dontAsk`).
@@ -203,7 +219,15 @@ So a request without `workbuddy.permissionMode` runs with the gateway's `openai.
 | `auto` | An AI classifier reviews actions; can still end in 409 when it asks |
 
 Precedence: request `workbuddy.permissionMode` → `--permission-mode` →
-`WB_AGENT_GATEWAY_PERMISSION_MODE` → config `openai.permissionMode`. Invalid values fail at start.
+`WB_AGENT_GATEWAY_PERMISSION_MODE` → config `openai.permissionMode`. An invalid configured value stops the
+gateway from starting; an invalid request value fails that request with `400`.
+
+> **`dontAsk` is a default, not a ceiling.** Whoever holds an `agent:run` token can request
+> `permissionMode: "bypassPermissions"` and any `cwd`, and the agent runs as the service user. Treat an
+> `agent:run` token as handing over that server account and issue it only to people and devices you trust.
+> The unit's `WorkingDirectory` and `NoNewPrivileges` do not restrict file access, and the agent inherits the
+> gateway's environment (the API key and passphrase from `.env` included). For stronger isolation, run it in a
+> dedicated VM or container.
 
 ## 6. Function calling (`openai.toolsMode`)
 
@@ -238,7 +262,7 @@ npm run test:openai      # official openai SDK against the real path
 
 | Symptom | Cause / fix |
 | --- | --- |
-| `409 agent_needs_input` | Ran in a prompting mode. Keep `openai.permissionMode` at `dontAsk` or pass `workbuddy.permissionMode` |
+| `409 agent_needs_input` (an `error` chunk when streaming) | Ran in a prompting mode. Keep `openai.permissionMode` at `dontAsk` or pass `workbuddy.permissionMode` |
 | Empty answer, `finish_reason: "length"` | No agent credential (stuck at `starting…`) or `timeoutSeconds` exceeded. Run `doctor` |
 | `401` | Missing, expired or revoked token. Issue a new one with `get-token.mjs` |
 | `403 insufficient_scope` | The token lacks `agent:run` |

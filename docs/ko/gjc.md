@@ -15,7 +15,9 @@ wb-agent-gateway  toolsMode=translate  ──▶  CodeBuddy 에이전트 (다음
 GJC가 read/edit/bash 등을 로컬에서 실행하고 결과를 role:"tool"로 다시 보냄
 ```
 
-에이전트는 "무엇을 할지"만 정하고, 실제 도구 실행은 GJC가 내 컴퓨터에서 합니다.
+에이전트가 "무엇을 할지" 정하면 GJC가 그 도구를 내 컴퓨터에서 실행합니다.
+단, `translate`는 형식 변환일 뿐 에이전트 자신의 도구를 끄지 않습니다. 에이전트가 서버에서 직접 하는 일을 줄이려면
+4절의 `workbuddy-minimal`을 쓰세요(`minimal`의 실제 격리 수준은 CodeBuddy 구현에 달려 있습니다).
 
 ## 1. 게이트웨이 쪽 전제
 
@@ -31,8 +33,9 @@ GJC가 read/edit/bash 등을 로컬에서 실행하고 결과를 role:"tool"로 
 
 - `toolsMode: "translate"` — 없으면 GJC가 보낸 도구 목록이 무시되고(`ignore`) 에이전트가 텍스트로만 답합니다.
 - `permissionMode: "dontAsk"` — GJC는 `workbuddy` 확장 필드를 보낼 수 없어서 게이트웨이 기본값이 그대로 적용됩니다.
-  권한을 묻는 모드면 `409 agent_needs_input`으로 턴이 끝납니다.
+  권한을 묻는 모드면 턴이 `agent_needs_input` 오류로 끝납니다(GJC는 스트리밍이라 HTTP 200 안의 오류 청크로 받습니다).
 - `backendModels` — GJC에서 쓸 `workbuddy…:<백엔드>` ID의 백엔드가 여기 있어야 합니다.
+  **빠져 있으면 오류 없이 기본 `cli` 에이전트(전체 도구)로 실행됩니다.** `minimal`을 골랐어도 마찬가지입니다.
 
 ## 2. 토큰
 
@@ -44,6 +47,7 @@ export WB_AGENT_TOKEN="$(cat ~/.config/wb-agent-token)"
 ```
 
 반복해서 쓸 때는 셸 프로필보다 OS 비밀 관리자로 주입하는 편이 안전합니다.
+토큰은 `accessTokenTtl`이 지나면 만료되므로(`401`), 긴 세션 중이라면 다시 발급해 export하고 GJC를 재시작합니다.
 
 ## 3. `models.yml`에 공급자 추가
 
@@ -75,6 +79,8 @@ providers:
   게이트웨이는 이 값을 에이전트 effort로 넘깁니다.
 - `input: [text]` — 게이트웨이는 이미지 입력을 `[image omitted]`로 바꿉니다.
 - `cost`의 0은 자리표시일 뿐 무료라는 뜻이 아닙니다. 실제 과금은 CodeBuddy 계정 기준입니다.
+- `contextWindow`, `maxTokens`는 GJC가 쓰는 클라이언트 쪽 메타데이터입니다. 게이트웨이가 확인하거나 강제하지 않으며(`max_tokens` 무시),
+  실제 한도는 계정의 백엔드 모델에 따릅니다.
 - GJC는 `/v1/models`의 다른 ID도 자동으로 목록에 보여 주지만, 이때 출력 한도 같은 값은 작은 기본값으로 잡힙니다.
   실제로 쓸 모델은 위처럼 명시하세요.
 
@@ -153,7 +159,7 @@ gjc -p --tools=read --model "wb-agent/workbuddy-minimal:gpt-5.5:high" \
 | `Model "wb-agent/…" not found` | `models.yml` 위치(또는 `GJC_CODING_AGENT_DIR`)와 공급자 이름, `id` 철자 |
 | `custom models need a credential source` | `apiKeyEnv`가 빠짐 |
 | `401` | `WB_AGENT_TOKEN`이 비었거나 만료/폐기됨. GJC를 실행한 셸에서 export 됐는지 확인 |
-| `409 agent_needs_input` | 게이트웨이 `openai.permissionMode`가 권한을 묻는 모드임. `dontAsk`로 |
+| `agent_needs_input` 오류 | 게이트웨이 `openai.permissionMode`가 권한을 묻는 모드임. `dontAsk`로 |
 | 도구를 안 쓰고 말로만 답함 | 게이트웨이 `toolsMode`가 `translate`가 아님(응답 헤더 `X-WorkBuddy-Tools-Ignored: 1`) |
 | `:high`가 먹지 않음 | `compat.supportsReasoningEffort: true`와 `thinking` 누락 |
 | 서버 쪽 파일을 읽은 듯한 엉뚱한 답 | `workbuddy`(cli) 대신 `workbuddy-minimal` 사용 |

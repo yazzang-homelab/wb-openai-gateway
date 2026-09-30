@@ -326,7 +326,7 @@ export function describeConfig(cfg) {
     upstreamAutoStart: cfg.upstream.autoStart ? `yes (port ${cfg.upstream.servePort})` : 'no',
     openaiToolsMode: cfg.openai.toolsMode,
     openaiPermissionMode: cfg.openai.permissionMode,
-    accessCode: cfg.accessCode ? 'set' : 'NOT SET (consent will auto-approve)',
+    accessCode: cfg.accessCode ? 'set' : 'NOT SET (consent is disabled: no new client can be approved)',
     scopes: cfg.scopes
   };
 }

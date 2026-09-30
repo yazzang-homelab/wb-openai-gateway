@@ -177,9 +177,11 @@
       <section class="container section">
         <div class="notice">
           <p data-l="ko"><strong>연결 전에.</strong> 게이트웨이는 서버에서 에이전트를 실행하는 엔드포인트입니다. 루프백·사설망·HTTPS 프록시 뒤에만 두고,
-            토큰·접속 암호·API 키·실제 주소는 Git에 넣지 마세요. <code>bypassPermissions</code>를 기본값으로 두면 접근 가능한 누구나 서버에서 명령을 실행할 수 있습니다.</p>
+            토큰·접속 암호·API 키·실제 주소는 Git에 넣지 마세요. <code>agent:run</code> 토큰 보유자는 요청으로 <code>bypassPermissions</code>를 지정해 서비스 사용자 권한으로 명령을 실행할 수 있으니, <code>dontAsk</code> 기본값을 상한으로 믿지 말고 믿는 기기에만 토큰을 발급하세요.
+            비공식 연동이므로 계정 약관에서 이런 사용이 허용되는지 먼저 확인하세요.</p>
           <p data-l="en"><strong>Before you connect.</strong> The gateway runs an agent on the host. Keep it on loopback, a private network or behind an HTTPS proxy,
-            and keep tokens, the access code, API keys and real addresses out of Git. Defaulting to <code>bypassPermissions</code> lets anyone who can reach it run commands on the host.</p>
+            and keep tokens, the access code, API keys and real addresses out of Git. An <code>agent:run</code> token holder can request <code>bypassPermissions</code> and run commands as the service user, so do not treat the <code>dontAsk</code> default as a ceiling; issue tokens only to trusted devices.
+            This is an unofficial integration: check that your account terms allow this use.</p>
         </div>
       </section>
     </main>

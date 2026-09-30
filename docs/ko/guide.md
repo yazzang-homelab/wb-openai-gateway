@@ -27,6 +27,11 @@ WorkBuddy / CodeBuddy 계정이 있으면 그 계정으로 쓸 수 있는 모델
 - **멈추지 않는 기본값.** OpenAI 요청은 권한 질문에 답할 수 없어서 기본 권한 모드를 `dontAsk`로 둡니다.
 - **상주 운영.** `codebuddy --serve`를 직접 띄우고 감시·재시작합니다.
 
+**비공식 연동입니다.** WorkBuddy/CodeBuddy가 이런 사용을 허용·지원한다고 보장하지 않습니다.
+자동화, 다른 도구·사람에게 계정 제공, 재판매, 사용량 제한 우회가 내 계정의 약관에서 허용되는지 먼저 확인하세요.
+계정 제한·추가 과금·기능 변경 위험은 사용자가 집니다. 프롬프트뿐 아니라 도구 결과에 담긴 소스와 데이터도
+게이트웨이 → 에이전트 → 모델 공급자로 전달됩니다.
+
 **안 맞는 경우.** 모델 공급자 API 키가 이미 있으면 공급자에 직접 연결하세요. 턴마다 에이전트 작업을 하나씩 만들고 끝내는 구조라 더 느리고,
 `translate` 모드에서는 스트리밍이 답이 끝난 뒤 한꺼번에 오며, 토큰 사용량도 추정치입니다.
 
@@ -44,7 +49,8 @@ WorkBuddy / CodeBuddy 계정이 있으면 그 계정으로 쓸 수 있는 모델
 
 ## 2. 설치 (Linux)
 
-Node.js 18.17 이상이 필요합니다. 게이트웨이 자체는 런타임 의존성이 없습니다.
+게이트웨이 실행에는 Node.js 18.17 이상이 필요하고 런타임 의존성이 없습니다.
+가이드 사이트 빌드(`npm run test:site`, `marked` 사용)는 Node.js 20 이상이 필요합니다.
 
 전용 사용자로 돌리는 것을 권장합니다. 에이전트의 파일/셸 도구가 그 사용자 권한으로 실행되기 때문입니다.
 
@@ -59,7 +65,7 @@ runuser -u wbagent -- bash -lc '
 
 ### 자격증명 파일
 
-`/home/wbagent/.local/wb-agent-gateway/.env` (권한 `600`, 커밋 금지):
+`/home/wbagent/.local/wb-agent-gateway/.env` (권한 `600`, 커밋 금지. 저장소 `.gitignore`가 `.env`를 제외하지만, 이미 커밋된 비밀은 지워지지 않습니다):
 
 ```ini
 CODEBUDDY_API_KEY=발급받은-키
@@ -79,7 +85,7 @@ WB_AGENT_GATEWAY_ACCESS_CODE=openssl-rand-base64-24-로-만든-값
   "host": "127.0.0.1",
   "port": 8931,
   "publicUrl": "http://127.0.0.1:8931",
-  "accessTokenTtl": 2592000,
+  "accessTokenTtl": 86400,
   "upstream": {
     "autoStart": true,
     "discover": false,
@@ -98,7 +104,9 @@ WB_AGENT_GATEWAY_ACCESS_CODE=openssl-rand-base64-24-로-만든-값
   이때 `.env`의 자격증명이 자식 프로세스로 전달됩니다.
 - `openai.backendModels` — 여기 적은 백엔드마다 `workbuddy:<백엔드>` 같은 모델 ID가 `/v1/models`에 나타납니다.
   계정에서 실제로 쓸 수 있는 모델 이름만 넣으세요.
-- `openai.toolsMode`, `openai.permissionMode` — 4, 5절에서 설명합니다.
+- `accessTokenTtl` — 액세스 토큰 수명(초). 기본은 3600(1시간)이고 예시는 86400(1일)입니다.
+  유출된 토큰은 만료 전까지 쓸 수 있으니 길게 잡지 마세요. 만료되면 3절로 다시 발급합니다.
+- `openai.toolsMode`, `openai.permissionMode` — 5, 6절에서 설명합니다.
 
 ### 서비스 등록
 
@@ -117,7 +125,10 @@ journalctl -u wb-agent-gateway -n 20 --no-pager
 ### 네트워크 노출
 
 `host`를 루프백이 아닌 주소로 바꾸면 **명령 실행 엔드포인트가 그 네트워크에 열립니다**(시작 로그에 경고가 뜹니다).
-Tailscale 같은 사설망 주소나 HTTPS 리버스 프록시 뒤에만 두고, 공인 인터넷에 직접 열지 마세요.
+Tailscale 같은 사설망 주소에만 두고, 공인 인터넷에 열지 마세요. HTTPS는 암호화일 뿐 접근 통제가 아닙니다.
+외부에서 접근해야 하면 TLS에 더해 VPN, 방화벽 허용 목록, 인증 프록시 중 하나로 접근 자체를 막으세요.
+클라이언트 등록(`/register`)은 인증 없이 열려 있고, 승인 암호 시도 제한은 클라이언트별이라 전역 무차별 대입 방어가 아닙니다.
+인증 없이 열리는 `/health`는 CodeBuddy 계정 이름, 로그인 여부, 등록 클라이언트 수를 돌려줍니다. 이 점도 노출 범위를 정할 때 고려하세요.
 `publicUrl`은 클라이언트가 실제로 접속하는 주소와 같아야 합니다. 다르면 `421 invalid_host`가 납니다.
 
 ## 3. 토큰 발급
@@ -126,16 +137,19 @@ Tailscale 같은 사설망 주소나 HTTPS 리버스 프록시 뒤에만 두고,
 토큰은 stdout으로만 나오므로 파일로 바로 받으세요.
 
 ```bash
-runuser -u wbagent -- env HOME=/home/wbagent \
-  node /home/wbagent/.local/wb-agent-gateway/tools/get-token.mjs \
-  --url http://127.0.0.1:8931 --name my-laptop > ~/.config/wb-agent-token
-chmod 600 ~/.config/wb-agent-token
+umask 077; mkdir -p ~/.config
+runuser -u wbagent -- bash -c 'set -a; . ~/.local/wb-agent-gateway/.env; set +a
+  node ~/.local/wb-agent-gateway/tools/get-token.mjs --url http://127.0.0.1:8931 --name my-laptop' \
+  > ~/.config/wb-agent-token.new && mv ~/.config/wb-agent-token.new ~/.config/wb-agent-token
 ```
 
-- 승인 암호는 `WB_AGENT_GATEWAY_ACCESS_CODE` 환경변수 또는 설정 파일의 `accessCode`에서 읽습니다.
+- 승인 암호는 `WB_AGENT_GATEWAY_ACCESS_CODE` 환경변수 또는 설정 파일의 `accessCode`에서 읽습니다. 도구는 `.env`를 직접 읽지 않으므로 위처럼 불러옵니다.
+- `umask 077`을 먼저 해야 토큰 파일이 처음부터 본인만 읽을 수 있게 만들어집니다. 발급에 실패하면 기존 토큰 파일은 그대로 남습니다.
+- 루프백이 아닌 `http://` 주소로는 승인 암호를 보내지 않습니다. 이미 암호화된 VPN(예: Tailscale) 위라면 `--allow-insecure-http`를 붙입니다.
 - 기기(클라이언트)마다 따로 발급하세요. `clients`로 목록을 보고 `rm-client <id>`로 등록을 지웁니다.
   **`rm-client`는 서비스를 멈춘 상태에서 실행하세요.** 실행 중인 게이트웨이는 메모리 상태를 `state.json`에 다시 써서 삭제를 되돌립니다.
-  이미 발급된 토큰은 만료되거나 `/revoke`될 때까지 유효하니 `accessTokenTtl`을 너무 길게 잡지 마세요.
+  등록을 지워도 이미 발급된 토큰은 만료 전까지 유효합니다. 기기를 잃어버렸다면 그 토큰을 직접 폐기하세요:
+  `curl -X POST http://127.0.0.1:8931/revoke -d "token=$(cat ~/.config/wb-agent-token)"`
 
 ## 4. 호출해 보기
 
@@ -163,13 +177,14 @@ client.chat.completions.create(model="workbuddy:gpt-5.5",
 | `workbuddy-minimal` | `minimal` | 샌드박스 REPL만. 파일/MCP 도구 없음 |
 
 뒤에 `:<백엔드>`를 붙이면 그 백엔드 모델로 실행합니다(`backendModels`에 있어야 함).
-모르는 ID는 기본 에이전트로 처리되고 요청한 ID가 그대로 응답에 들어갑니다.
+**모르는 ID는 오류 없이 기본 `cli` 에이전트(전체 도구)로 실행**되고 요청한 ID가 그대로 응답에 들어갑니다.
+`backendModels`에 없는 백엔드를 붙인 `workbuddy-minimal:…`도 마찬가지로 `cli`가 되니, 쓰는 백엔드는 반드시 등록하세요.
 
 ### 표준 필드 처리
 
 - `stream: true` 지원. 오래 걸리는 작업 동안 15초마다 SSE keepalive를 보냅니다.
 - `reasoning_effort`는 에이전트의 effort(`minimal`~`max`)로 전달됩니다.
-- `temperature`, `top_p`, `max_tokens`, `stop`은 형식만 검사하고 무시합니다. 이미지 입력은 `[image omitted]`로 바뀝니다.
+- `temperature`, `top_p`, `max_tokens`, `stop`은 검사 없이 무시합니다. 이미지 입력은 `[image omitted]`로 바뀝니다.
 - `usage`는 글자 수로 추정한 값입니다.
 
 ### 확장 필드 `workbuddy`
@@ -185,6 +200,7 @@ client.chat.completions.create(model="workbuddy:gpt-5.5",
 
 에이전트가 자기 도구를 쓰기 전에 권한 확인을 기다리면(`blocked`), OpenAI 요청은 그 질문에 답할 방법이 없습니다.
 게이트웨이는 작업을 멈추고, 그때까지 나온 답이 없으면 `409 agent_needs_input`을 돌려줍니다.
+스트리밍 요청은 이미 HTTP 200을 보낸 뒤라서, 같은 오류가 스트림 안의 `error` 필드가 있는 청크로 옵니다.
 
 그래서 `workbuddy.permissionMode`를 주지 않은 요청은 게이트웨이 설정 `openai.permissionMode`(기본 `dontAsk`)로 실행됩니다.
 
@@ -199,7 +215,13 @@ client.chat.completions.create(model="workbuddy:gpt-5.5",
 
 바꾸는 방법(우선순위 순서): 요청의 `workbuddy.permissionMode` → `--permission-mode` →
 `WB_AGENT_GATEWAY_PERMISSION_MODE` → 설정 파일 `openai.permissionMode`.
-허용되지 않는 값이면 시작할 때 에러를 냅니다.
+설정 값이 잘못되면 게이트웨이가 시작하지 않고, 요청 값이 잘못되면 그 요청만 `400`입니다.
+
+> **`dontAsk`는 기본값이지 상한이 아닙니다.** `agent:run` 토큰을 가진 사람은 요청에서
+> `permissionMode: "bypassPermissions"`와 임의의 `cwd`를 지정할 수 있고, 에이전트는 서비스 사용자 권한으로 돕니다.
+> `agent:run` 토큰은 그 서버 사용자 계정을 넘겨주는 것과 같다고 보고, 믿는 사람·기기에만 발급하세요.
+> 서비스 유닛의 `WorkingDirectory`와 `NoNewPrivileges`는 파일 접근 제한이 아닙니다. 에이전트는 게이트웨이의 환경변수
+> (`.env`의 API 키, 승인 암호 포함)도 물려받습니다. 더 강한 격리가 필요하면 전용 VM이나 컨테이너에서 돌리세요.
 
 ## 6. 함수 호출 (`openai.toolsMode`)
 
@@ -234,7 +256,7 @@ npm run test:openai      # 공식 openai SDK로 실제 경로 검사
 
 | 증상 | 원인 / 조치 |
 | --- | --- |
-| `409 agent_needs_input` | 권한을 묻는 모드로 실행됨. `openai.permissionMode`를 `dontAsk`로 두거나 요청에 `workbuddy.permissionMode`를 지정 |
+| `409 agent_needs_input` (스트림에서는 `error` 청크) | 권한을 묻는 모드로 실행됨. `openai.permissionMode`를 `dontAsk`로 두거나 요청에 `workbuddy.permissionMode`를 지정 |
 | 빈 답, `finish_reason: "length"` | 에이전트 자격증명 없음(`starting…`에 멈춤) 또는 `timeoutSeconds` 초과. `doctor`로 확인 |
 | `401` | 토큰 없음·만료·폐기. `get-token.mjs`로 다시 발급 |
 | `403 insufficient_scope` | 토큰에 `agent:run` 범위가 없음 |

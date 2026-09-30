@@ -13,7 +13,10 @@ providers:
       supportsReasoningEffort: true
     models:
       # `<pseudo-model>:<backend>`; the backend must be listed in the gateway's
-      # openai.backendModels, otherwise the id falls back to the default agent.
+      # openai.backendModels, otherwise the request silently runs on the default
+      # `cli` agent with its full tool set, even for `workbuddy-minimal:...`.
+      # contextWindow/maxTokens below are client-side metadata; the gateway does
+      # not enforce them.
       - id: workbuddy-minimal:gpt-5.5
         name: WorkBuddy minimal · GPT-5.5
         reasoning: true

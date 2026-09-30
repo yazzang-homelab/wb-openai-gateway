@@ -8,7 +8,7 @@
   "publicUrl": null,
 
   "//accessCode": "Human approval passphrase shown on the consent screen. Generate one with: openssl rand -base64 24",
-  "accessCode": "CHANGE-ME",
+  "accessCode": null,
 
   "accessTokenTtl": 3600,
   "refreshTokenTtl": 2592000,
