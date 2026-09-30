@@ -11,6 +11,10 @@ The upstream repository carries no license file. This repository modifies and re
 on 2026-09-30. That permission is not a general open-source license: if you want to reuse the upstream code
 beyond this repository, ask the author yourself.
 
+> Discord, 2026-09-30 (KST): 홍어(yazzang-homelab) 16:43 "요거 수정해서 공개배포 해도될까요 ?" —
+> DBC(dbc-hbin) 16:48 "옙 상관없죠 뭐"
+
+
 Changes to upstream code:
 
 - `openai.backendModels`: exposes `<pseudo-model>:<backend>` model ids (e.g. `workbuddy:gpt-5.5`) in `/v1/models`
