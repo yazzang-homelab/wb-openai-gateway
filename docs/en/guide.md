@@ -43,6 +43,11 @@ and token usage is an estimate.
 | Gateway password | gateway → `codebuddy --serve` | `gateway.password` in `~/.codebuddy/settings.json` (automatic) |
 | Agent credential | agent → model backend | `CODEBUDDY_API_KEY` or `CODEBUDDY_AUTH_TOKEN` |
 
+**Free accounts work.** An API key (`CODEBUDDY_API_KEY`) can only be issued to Pro users, but a free account works
+through a CLI sign-in session (see "Free account: CLI sign-in" below). On 2026-09-30 a free account answered on
+`gpt-5.5`, `gpt-6-astra`, `glm-5.3`, `kimi-k3` and others, and returned text and `tool_calls` through the gateway.
+Usage limits follow the account tier.
+
 Without the third, a job parks at `starting…` and eventually returns an empty answer with
 `finish_reason: "length"`. `CODEBUDDY_API_KEY` needs `CODEBUDDY_INTERNET_ENVIRONMENT` to match the
 account edition (unset for International, `internal` for China).
@@ -75,6 +80,25 @@ WB_AGENT_GATEWAY_ACCESS_CODE=value-from-openssl-rand-base64-24
 
 `WB_AGENT_GATEWAY_ACCESS_CODE` is the passphrase that approves new clients. Without it the consent
 screen is disabled and no new client can be approved.
+
+### Free account: CLI sign-in
+
+Instead of an API key, run the CLI interactively once as the service user and sign in. The session is stored in
+`~/.codebuddy` and reused by the `codebuddy --serve` the gateway spawns; `.env` then only needs
+`WB_AGENT_GATEWAY_ACCESS_CODE`.
+
+```bash
+runuser -u wbagent -- bash -lc 'cd ~/wb-agent-work && ~/.local/codebuddy/node_modules/@tencent-ai/codebuddy-code/bin/codebuddy'
+# trust the folder → "Log in via International Site" (China: Chinese Site) → open the printed URL and sign in
+```
+
+**Put the working directory on the trust list.** A background job waits, headless, on the folder-trust question and
+parks at `preparing`; the gateway eventually returns an empty answer (`finish_reason: "length"`). Choosing trust in the
+interactive window may not persist, so write it into `~/.codebuddy/settings.json`:
+
+```json
+{ "trustedDirectories": ["/home/wbagent/wb-agent-work"] }
+```
 
 ### Config file
 
@@ -263,7 +287,7 @@ npm run test:openai      # official openai SDK against the real path
 | Symptom | Cause / fix |
 | --- | --- |
 | `409 agent_needs_input` (an `error` chunk when streaming) | Ran in a prompting mode. Keep `openai.permissionMode` at `dontAsk` or pass `workbuddy.permissionMode` |
-| Empty answer, `finish_reason: "length"` | No agent credential (stuck at `starting…`) or `timeoutSeconds` exceeded. Run `doctor` |
+| Empty answer, `finish_reason: "length"` | No agent credential (stuck at `starting…`), working directory missing from `trustedDirectories` (stuck at `preparing`), or `timeoutSeconds` exceeded. Run `doctor` |
 | `401` | Missing, expired or revoked token. Issue a new one with `get-token.mjs` |
 | `403 insufficient_scope` | The token lacks `agent:run` |
 | `421 invalid_host` | `publicUrl` differs from the URL the client uses |

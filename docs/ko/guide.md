@@ -43,6 +43,10 @@ WorkBuddy / CodeBuddy 계정이 있으면 그 계정으로 쓸 수 있는 모델
 | 게이트웨이 비밀번호 | 게이트웨이 → `codebuddy --serve` | `~/.codebuddy/settings.json`의 `gateway.password` (자동) |
 | 에이전트 자격증명 | 에이전트 → 모델 백엔드 | `CODEBUDDY_API_KEY` 또는 `CODEBUDDY_AUTH_TOKEN` |
 
+**무료 계정도 됩니다.** API 키(`CODEBUDDY_API_KEY`)는 Pro 사용자만 발급받을 수 있지만, 무료 계정은 CLI 로그인 세션으로 씁니다
+(아래 "무료 계정: CLI 로그인" 참고). 2026-09-30 무료 계정으로 `gpt-5.5`, `gpt-6-astra`, `glm-5.3`, `kimi-k3` 등의 응답과
+게이트웨이 경유 텍스트·`tool_calls`를 확인했습니다. 사용량 한도는 계정 등급에 따릅니다.
+
 세 번째가 없으면 작업이 `starting…`에 멈추고 결국 빈 응답(`finish_reason: "length"`)이 돌아옵니다.
 `CODEBUDDY_API_KEY`는 계정 지역에 맞는 `CODEBUDDY_INTERNET_ENVIRONMENT`가 필요합니다
 (국제판은 비워 두고, 중국판은 `internal`).
@@ -75,6 +79,24 @@ WB_AGENT_GATEWAY_ACCESS_CODE=openssl-rand-base64-24-로-만든-값
 
 `WB_AGENT_GATEWAY_ACCESS_CODE`는 새 클라이언트를 승인할 때 쓰는 암호입니다. 없으면 동의 화면이 꺼져서
 어떤 클라이언트도 새로 승인할 수 없습니다.
+
+### 무료 계정: CLI 로그인
+
+API 키 대신, 서비스 사용자로 CLI를 한 번 대화형으로 실행해 로그인합니다. 세션은 `~/.codebuddy`에 저장되고
+게이트웨이가 띄우는 `codebuddy --serve`가 그대로 씁니다. 이 경우 `.env`에는 `WB_AGENT_GATEWAY_ACCESS_CODE`만 둡니다.
+
+```bash
+runuser -u wbagent -- bash -lc 'cd ~/wb-agent-work && ~/.local/codebuddy/node_modules/@tencent-ai/codebuddy-code/bin/codebuddy'
+# 폴더 신뢰 → "Log in via International Site"(중국판은 Chinese Site) → 출력된 URL을 브라우저에서 열어 로그인
+```
+
+**작업 폴더를 반드시 신뢰 목록에 넣으세요.** 백그라운드 작업은 폴더 신뢰 질문을 화면 없이 기다리며 `preparing`에 멈추고,
+게이트웨이는 결국 빈 답(`finish_reason: "length"`)을 돌려줍니다. 대화형 창에서 신뢰를 골라도 저장되지 않을 수 있으니
+`~/.codebuddy/settings.json`에 직접 적습니다.
+
+```json
+{ "trustedDirectories": ["/home/wbagent/wb-agent-work"] }
+```
 
 ### 설정 파일
 
@@ -257,7 +279,7 @@ npm run test:openai      # 공식 openai SDK로 실제 경로 검사
 | 증상 | 원인 / 조치 |
 | --- | --- |
 | `409 agent_needs_input` (스트림에서는 `error` 청크) | 권한을 묻는 모드로 실행됨. `openai.permissionMode`를 `dontAsk`로 두거나 요청에 `workbuddy.permissionMode`를 지정 |
-| 빈 답, `finish_reason: "length"` | 에이전트 자격증명 없음(`starting…`에 멈춤) 또는 `timeoutSeconds` 초과. `doctor`로 확인 |
+| 빈 답, `finish_reason: "length"` | 에이전트 자격증명 없음(`starting…`에 멈춤), 작업 폴더가 `trustedDirectories`에 없음(`preparing`에 멈춤), 또는 `timeoutSeconds` 초과. `doctor`로 확인 |
 | `401` | 토큰 없음·만료·폐기. `get-token.mjs`로 다시 발급 |
 | `403 insufficient_scope` | 토큰에 `agent:run` 범위가 없음 |
 | `421 invalid_host` | `publicUrl`이 클라이언트 접속 주소와 다름 |
